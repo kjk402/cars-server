@@ -205,6 +205,8 @@ class FilteredCarSearchView(APIView):
             openapi.Parameter('max_price', openapi.IN_QUERY, description="최대 가격", type=openapi.TYPE_INTEGER, required=False),
             openapi.Parameter('year', openapi.IN_QUERY, description="연식", type=openapi.TYPE_INTEGER, required=False),
             openapi.Parameter('sort', openapi.IN_QUERY, description="정렬 (price_asc, price_desc, year_asc, year_desc, mileage_asc, mileage_desc)", type=openapi.TYPE_STRING, required=False),
+            openapi.Parameter('page', openapi.IN_QUERY, description="페이지 번호 (1부터 시작)", type=openapi.TYPE_INTEGER, required=False),
+            openapi.Parameter('size', openapi.IN_QUERY, description="페이지 당 결과 수", type=openapi.TYPE_INTEGER, required=False),
         ],
         responses={200: openapi.Response("필터링된 차량 리스트")}
     )
@@ -212,16 +214,24 @@ class FilteredCarSearchView(APIView):
         filters = []
         sort_option = request.GET.get("sort", "price_asc")
 
+        # 페이징 파라미터
+        try:
+            page = int(request.GET.get("page", 1))
+            size = int(request.GET.get("size", 20))
+        except ValueError:
+            return Response({"error": "page와 size는 정수여야 합니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+        from_index = (page - 1) * size
+
         # 필터 추가
         if "brand" in request.GET:
             filters.append({"term": {"brand": request.GET["brand"]}})
         if "model" in request.GET:
-            filters.append({"term": {"model": request.GET["model"]}})  # ✅ model.keyword 추가
+            filters.append({"term": {"model": request.GET["model"]}})
         if "fuelType" in request.GET:
             filters.append({"term": {"fuelType": request.GET["fuelType"]}})
         if "min_price" in request.GET:
             filters.append({"range": {"price": {"gte": request.GET["min_price"]}}})
-
         if "max_price" in request.GET:
             filters.append({"range": {"price": {"lte": request.GET["max_price"]}}})
         if "year" in request.GET:
@@ -245,11 +255,21 @@ class FilteredCarSearchView(APIView):
                 }
             },
             "sort": sort_query,
-            "size": 100
+            "from": from_index,
+            "size": size
         }
 
         results = es.search(index="cars", body=body)
-        return Response(results["hits"]["hits"], status=status.HTTP_200_OK)
+
+        response_data = {
+            "results": results["hits"]["hits"],
+            "total": results["hits"]["total"]["value"],
+            "page": page,
+            "size": size
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
 
 
 
