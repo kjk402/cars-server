@@ -269,10 +269,6 @@ class FilteredCarSearchView(APIView):
 
         return Response(response_data, status=status.HTTP_200_OK)
 
-
-
-
-
 # 브랜드별 모델 검색
 class BrandModelsView(APIView):
     @swagger_auto_schema(
@@ -353,3 +349,63 @@ class BrandAvgPriceView(APIView):
         ]
 
         return Response({"brand_avg_prices": brand_prices}, status=200)
+
+
+class EngineSizesByBrandModelView(APIView):
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter("brand", openapi.IN_QUERY, description="브랜드", type=openapi.TYPE_STRING, required=True),
+            openapi.Parameter("model", openapi.IN_QUERY, description="모델", type=openapi.TYPE_STRING, required=True),
+            openapi.Parameter("fuelType", openapi.IN_QUERY, description="연료 타입", type=openapi.TYPE_STRING, required=False),
+        ],
+        responses={200: openapi.Response("브랜드/모델/연료타입별 엔진 사이즈 리스트")},
+    )
+    def get(self, request):
+        brand = request.GET.get("brand")
+        model = request.GET.get("model")
+        fuel_type = request.GET.get("fuelType", None)
+
+        if not brand or not model:
+            return Response({"error": "brand와 model 파라미터는 필수입니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+        must_filters = [
+            {"term": {"brand": brand}},
+            {"term": {"model": model}}
+        ]
+        if fuel_type:
+            must_filters.append({"term": {"fuelType": fuel_type}})
+
+        body = {
+            "size": 0,
+            "query": {
+                "bool": {
+                    "must": must_filters
+                }
+            },
+            "aggs": {
+                "engine_sizes": {
+                    "terms": {
+                        "field": "engineSize",
+                        "size": 50,
+                        "order": {"_key": "asc"}
+                    }
+                }
+            }
+        }
+
+        try:
+            results = es.search(index="cars", body=body)
+            engine_sizes = [bucket["key"] for bucket in results["aggregations"]["engine_sizes"]["buckets"]]
+
+            return Response({
+                "brand": brand,
+                "model": model,
+                "fuelType": fuel_type,
+                "engine_sizes": engine_sizes
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response({"error": "Elasticsearch 조회 중 오류 발생", "detail": str(e)},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)

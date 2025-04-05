@@ -8,7 +8,8 @@ from .views import (
     SimilarCarsView,
     FilteredCarSearchView,
     BrandModelsView,
-    BrandAvgPriceView
+    BrandAvgPriceView,
+    EngineSizesByBrandModelView
 )
 
 urlpatterns = [
@@ -22,5 +23,7 @@ urlpatterns = [
     path('brand-models/', BrandModelsView.as_view(), name="brand-models"),  # ✅ 특정 브랜드 모델 조회
 
     path("brand-avg-prices/", BrandAvgPriceView.as_view(), name="brand-avg-prices"),
+
+    path("engine-sizes/", EngineSizesByBrandModelView.as_view(), name="engine-size-list"),
 
 ]
