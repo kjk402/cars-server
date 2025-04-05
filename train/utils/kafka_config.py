@@ -1,37 +1,52 @@
+import asyncio
 import json
 import uuid
-from kafka import KafkaProducer, KafkaConsumer
+
+from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
+
 from config import settings
 
-producer = KafkaProducer(
-    bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,
-    value_serializer=lambda v: json.dumps(v).encode("utf-8"),
-    request_timeout_ms=2000,  # 요청 타임아웃 5초
-    max_block_ms=2000
-)
 
-
-def send_predict_request(payload):
+async def send_predict_request_async(payload):
     request_id = str(uuid.uuid4())
-    payload["request_id"] = request_id  # <- 여기에 넣어줘야 함
-    producer.send(settings.PREDICT_REQUEST_TOPIC, payload)
-    producer.flush()
+    payload["request_id"] = request_id
+
+    producer = AIOKafkaProducer(
+        bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,
+        value_serializer=lambda v: json.dumps(v).encode("utf-8")
+    )
+    await producer.start()
+    try:
+        await producer.send(settings.PREDICT_REQUEST_TOPIC, payload)
+    finally:
+        await producer.stop()
+
     return request_id
 
 
-def wait_for_response(request_id, timeout=10):
-    consumer = KafkaConsumer(
+async def wait_for_response_async(request_id, timeout=10):
+    consumer = AIOKafkaConsumer(
         settings.PREDICT_RESPONSE_TOPIC,
         bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,
         value_deserializer=lambda v: json.loads(v.decode("utf-8")),
-        auto_offset_reset='earliest',
-        enable_auto_commit=True,
-        group_id='django_response_group'
+        auto_offset_reset="latest",
+        enable_auto_commit=False,
+        group_id="django_response_group",
+        # fetch_max_bytes=1048576,  # 1MB
+        # max_partition_fetch_bytes=1048576,  # 1MB
+        # fetch_max_wait_ms=11,
+        # max_poll_records=11000,
     )
-
-    for message in consumer:
-        data = message.value
-        if data.get("request_id") == request_id:
-            consumer.close()
-            return data
+    await consumer.start()
+    try:
+        start_time = asyncio.get_event_loop().time()
+        async for message in consumer:
+            data = message.value
+            if data.get("request_id") == request_id:
+                return data
+            if asyncio.get_event_loop().time() - start_time > timeout:
+                break
+    finally:
+        await consumer.stop()
     return None
+

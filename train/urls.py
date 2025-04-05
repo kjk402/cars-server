@@ -1,7 +1,7 @@
-# train/urls.py
+# urls.py
 from django.urls import path
-from .views import PredictCarPriceAPIView
+from .views import predict_car_price_view
 
 urlpatterns = [
-    path("predict/", PredictCarPriceAPIView.as_view(), name="predict-car-price"),
+    path("predict/", predict_car_price_view, name="predict"),
 ]

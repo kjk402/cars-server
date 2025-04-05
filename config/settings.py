@@ -24,8 +24,6 @@ SECRET_KEY = 'django-insecure-_sv-c949q1lj!d(7)t2050%f@sw=$!4%jqn_)+16tn1_^=gx95
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -38,6 +36,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
     'cars',
+    'train',
 ]
 
 MIDDLEWARE = [
@@ -156,3 +155,5 @@ PREDICT_RESPONSE_TOPIC = "car-predict-response"
 
 # 응답 대기 최대 시간 (초)
 KAFKA_RESPONSE_TIMEOUT = 15
+
+ASGI_APPLICATION = "config.asgi.application"
