@@ -1,12 +1,13 @@
-# views.py
-import asyncio
 import time
+from asgiref.sync import async_to_sync
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
-from .utils.kafka_config import send_predict_request_async, wait_for_response_async
+
+from .kafka_response_map import response_map
+from .utils.kafka_config import send_predict_request_async
 
 
 @swagger_auto_schema(
@@ -30,25 +31,19 @@ def predict_car_price_view(request):
     start_time = time.time()
     try:
         input_data = request.data
+        request_id = async_to_sync(send_predict_request_async)(input_data)
 
-        # ✅ 비동기 함수 실행을 asyncio.run 대신 이벤트 루프로 실행
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        for _ in range(100):
+            if request_id in response_map:
+                end_time = time.time()  # 응답 받은 시간 기록
+                print(f"요청 처리 시간: {end_time - start_time:.4f} 초")  # 처리 시간 출력
+                return Response(response_map.pop(request_id))
+            time.sleep(0.1)
 
-        request_id = loop.run_until_complete(send_predict_request_async(input_data))
-        response_data = loop.run_until_complete(wait_for_response_async(request_id, timeout=10))
-
-        loop.close()
-
-        if not response_data:
-            return Response(
-                {"error": "예측 응답 타임아웃"},
-                status=status.HTTP_504_GATEWAY_TIMEOUT
-            )
-        end_time = time.time()  # 요청 종료 시간 기록
-        print(f"요청 처리 시간: {end_time - start_time:.4f} 초")  # 처리 시간 출력
-
-        return Response(response_data)
+        return Response(
+            {"error": "예측 응답 타임아웃"},
+            status=status.HTTP_504_GATEWAY_TIMEOUT
+        )
 
     except Exception as e:
         import traceback
