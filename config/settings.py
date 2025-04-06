@@ -153,6 +153,9 @@ KAFKA_BOOTSTRAP_SERVERS = "172.27.152.112:9092"
 PREDICT_REQUEST_TOPIC = "car-predict-request"
 PREDICT_RESPONSE_TOPIC = "car-predict-response"
 
+HEALTH_CHECK_REQUEST_TOPIC = "car-health-check-request"
+HEALTH_CHECK_RESPONSE_TOPIC = "car-health-check-response"
+
 # 응답 대기 최대 시간 (초)
 KAFKA_RESPONSE_TIMEOUT = 15
 

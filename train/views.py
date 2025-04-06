@@ -7,7 +7,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from .kafka_response_map import response_map
-from .utils.kafka_config import send_predict_request_async
+from .utils.kafka_config import send_predict_request_async, send_health_check_async
 
 
 @swagger_auto_schema(
@@ -49,3 +49,32 @@ def predict_car_price_view(request):
         import traceback
         traceback.print_exc()
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# 헬스체크
+@api_view(["GET"])
+def health_check_kafka(request):
+    try:
+        request_id = async_to_sync(send_health_check_async)()
+
+        for _ in range(50):
+            if request_id in response_map:
+                result = response_map.pop(request_id)
+                return Response({
+                    "status": "ok",
+                    "detail": "Kafka-FastAPI 통신 성공",
+                    "response": result
+                }, status=200)
+            time.sleep(0.1)
+
+        return Response({
+            "status": "fail",
+            "detail": "Kafka 응답 타임아웃"
+        }, status=504)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return Response({
+            "status": "error",
+            "detail": str(e)
+        }, status=500)

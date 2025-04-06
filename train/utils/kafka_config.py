@@ -25,3 +25,14 @@ async def send_predict_request_async(payload):
     payload["request_id"] = request_id
     await producer.send(settings.PREDICT_REQUEST_TOPIC, payload)
     return request_id
+
+# 헬스 체크
+async def send_health_check_async():
+    await init_producer()
+    request_id = str(uuid.uuid4())
+    payload = {
+        "request_id": request_id,
+        "health_check": True
+    }
+    await producer.send(settings.HEALTH_CHECK_REQUEST_TOPIC, payload)
+    return request_id
