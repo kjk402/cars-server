@@ -1,16 +1,22 @@
-# config/settings/dev.py
 from .base import *
+import environ
 
-DEBUG = True
-ALLOWED_HOSTS = ["*"]
-CORS_ALLOW_ALL_ORIGINS = True
+env = environ.Env(
+    DEBUG=(bool, True),
+    CORS_ALLOW_ALL_ORIGINS=(bool, True)
+)
+environ.Env.read_env(".env.dev")
 
-ELASTICSEARCH_HOST = "http://localhost:9200"
+DEBUG = env("DEBUG")
+ALLOWED_HOSTS = env("ALLOWED_HOSTS").split(",")
+CORS_ALLOW_ALL_ORIGINS = env("CORS_ALLOW_ALL_ORIGINS")
+
+ELASTICSEARCH_HOST = env("ELASTICSEARCH_HOST")
 
 ELASTICSEARCH_DSL = {
     'default': {
-        'hosts': 'http://localhost:9200'  # Elasticsearch 서버 주소
+        'hosts': ELASTICSEARCH_HOST
     }
 }
 
-KAFKA_BOOTSTRAP_SERVERS = "172.27.152.112:9092"
+KAFKA_BOOTSTRAP_SERVERS = env("KAFKA_BOOTSTRAP_SERVERS")

@@ -8,7 +8,7 @@ from django.core.asgi import get_asgi_application
 
 from train.utils.kafka_listener import kafka_response_listener, kafka_health_response_listener
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.dev")
 django.setup()
 application = get_asgi_application()
 
