@@ -140,15 +140,8 @@ BRAND_LOGOS = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-ELASTICSEARCH_DSL = {
-    'default': {
-        'hosts': 'http://localhost:9200'  # Elasticsearch 서버 주소
-    }
-}
 
 CORS_ALLOW_ALL_ORIGINS = True
-
-KAFKA_BOOTSTRAP_SERVERS = "172.27.152.112:9092"
 
 PREDICT_REQUEST_TOPIC = "car-predict-request"
 PREDICT_RESPONSE_TOPIC = "car-predict-response"

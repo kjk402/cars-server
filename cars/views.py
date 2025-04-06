@@ -8,7 +8,7 @@ from elasticsearch import Elasticsearch
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-es = Elasticsearch("http://localhost:9200")  # Elasticsearch 서버 주소
+es = Elasticsearch(settings.ELASTICSEARCH_HOST)  # Elasticsearch 서버 주소
 
 class CarSearchView(APIView):
     # Swagger 문서화 추가
@@ -56,8 +56,8 @@ BRAND_LOGOS = {
 
 def get_base64_image(brand):
     """ 브랜드 로고를 Base64로 변환하여 반환 """
-    static_dir = os.path.join(settings.BASE_DIR, "static", "logos")  # ✅ 절대 경로 사용
-    logo_path = os.path.join(static_dir, f"{brand.lower()}.png")  # 브랜드 소문자로 변환
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    logo_path = os.path.join(base_dir, "static", "logos", f"{brand.lower()}.png")
 
     print(f"🔍 Checking logo path: {logo_path}")  # ✅ 경로 확인용 로그 추가
 

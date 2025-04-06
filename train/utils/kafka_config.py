@@ -3,7 +3,7 @@ import uuid
 
 from aiokafka import AIOKafkaProducer
 
-from config import settings
+from django.conf import settings
 
 producer = None
 
