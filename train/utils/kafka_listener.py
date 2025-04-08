@@ -2,7 +2,7 @@ import json
 import uuid
 from aiokafka import AIOKafkaConsumer
 
-from config import settings
+from django.conf import settings
 from train.kafka_response_map import response_map
 
 
